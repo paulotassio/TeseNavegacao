@@ -188,7 +188,8 @@ def _print_summary(df: pd.DataFrame):
     if "session" in df.columns and df["session"].nunique() > 1:
         for s in sorted(df["session"].unique()):
             sub = df[df["session"] == s]
-            frac = (sub["detect_ms"] / sub["total_latency_ms"]).mean() * 100
+            # Fracao = detect_medio / total_medio (ratio das medias, nao media dos ratios)
+            frac = sub["detect_ms"].mean() / sub["total_latency_ms"].mean() * 100
             print(f"\n  Sessao {s} ({len(sub)} quadros):")
             print(f"    Latencia total mediana: {sub['total_latency_ms'].median():.1f} ms")
             print(f"    Fracao deteccao:        {frac:.1f}%")
