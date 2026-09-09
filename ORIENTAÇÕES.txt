@@ -7,3 +7,5 @@ pip install -r requirements.txt
 
 3. Executar o pipeline:
 python main.py RESULTADOS_LOGS/Xiaomi-22101320G-Android-14_2026-07-06_181229.logcat RESULTADOS_LOGS/Xiaomi-22101320G-Android-14_2026-07-06_183131.logcat
+
+4. o dataset completo processado "resultado_dataset.csv" é que alimenta o AHP e o TOPSIS.
