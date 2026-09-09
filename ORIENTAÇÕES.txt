@@ -1,0 +1,9 @@
+ORIENTAÇÕES
+
+1. Instalar as dependências:
+pip install -r requirements.txt
+
+2. Descompacte a pasta RESULTADOS_LOGS
+
+3. Executar o pipeline:
+python main.py RESULTADOS_LOGS/Xiaomi-22101320G-Android-14_2026-07-06_181229.logcat RESULTADOS_LOGS/Xiaomi-22101320G-Android-14_2026-07-06_183131.logcat
