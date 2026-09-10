@@ -9,3 +9,33 @@ pip install -r requirements.txt
 python main.py RESULTADOS_LOGS/Xiaomi-22101320G-Android-14_2026-07-06_181229.logcat RESULTADOS_LOGS/Xiaomi-22101320G-Android-14_2026-07-06_183131.logcat
 
 4. o dataset completo processado "resultado_dataset.csv" é que alimenta o AHP e o TOPSIS.
+
+Papel do AHP
+
+O AHP seria usado para responder a seguinte pergunta: entre os três critérios de decisão — latência, jitter e criticidade — qual é mais importante, e em que proporção?
+
+Hoje os pesos dessas variáveis estão implícitos nas regras fuzzy especialistas, definidos de forma qualitativa ("se criticidade é Alta, risco é Alto"). O AHP formaliza e torna explícita essa hierarquia de importância por meio de comparações par a par entre os critérios, usando a escala fundamental de Saaty de 1 a 9. O resultado é um vetor de pesos numéricos — um para cada critério — que representa quantitativamente a importância relativa de cada variável na decisão de segurança.
+
+Para que os pesos sejam válidos, a matriz de comparações precisa ser suficientemente consistente, o que é verificado pelo cálculo da Razão de Consistência (CR). O valor de CR deve ser inferior a 0,10; caso contrário, os julgamentos são contraditórios e precisam ser revisados.
+
+Os julgamentos da matriz devem refletir o mesmo princípio de segurança física já codificado no sistema fuzzy especialista: a criticidade do obstáculo (proximidade física iminente) representa a ameaça mais direta ao usuário, o jitter de rede representa o risco de dependência de uma conexão instável, e a latência bruta, isoladamente, tem maior margem de tolerância antes de se tornar perigosa. Esses julgamentos precisam ser documentados e justificados no relatório.
+
+Os pesos gerados pelo AHP têm dois usos neste projeto. O primeiro é a calibração do ANFIS: os pesos podem ser usados para ajustar a sensibilidade inicial das funções de pertinência das variáveis de entrada, dando maior "peso" às variáveis mais importantes antes do treinamento. O segundo uso, e o mais central para a disciplina, é alimentar o TOPSIS como os pesos dos critérios na etapa de comparação entre alternativas.
+
+Papel do TOPSIS
+
+O TOPSIS seria usado para tomar a decisão de offloading quadro a quadro — exatamente o que o sistema fuzzy já faz — mas de forma determinística e compensatória, sem regras de override. O objetivo é ter um baseline de comparação rigoroso contra o sistema neuro-fuzzy.
+
+Para cada quadro do dataset (resultado_dataset.csv), o TOPSIS avalia três alternativas de processamento — Local, Híbrido e Borda — usando os três critérios ponderados pelo AHP. O algoritmo normaliza os valores de cada critério entre todas as alternativas, aplica os pesos, identifica a Solução Ideal Positiva (melhor valor possível de cada critério) e a Solução Ideal Negativa (pior valor possível), calcula a distância euclidiana de cada alternativa às duas soluções, e escolhe a alternativa com maior proximidade relativa à solução ideal positiva.
+
+Os três critérios são todos do tipo custo: quanto menor a latência, menor o jitter e menor a criticidade do obstáculo, melhor e mais segura é a situação. Isso precisa ser declarado explicitamente na implementação, pois influencia como os pontos ideais são calculados.
+
+Uma decisão importante que precisa ser tomada e justificada é como cada critério é atribuído a cada alternativa. A latência varia de fato entre as alternativas: para Local, usa-se a latência total medida; para Borda, modela-se como o RTT de rede mais um tempo estimado de inferência em servidor remoto; para Híbrido, usa-se a média entre as duas. Já o jitter de rede e a criticidade do obstáculo são propriedades do ambiente no instante da decisão, não do local de processamento — eles não mudam dependendo de onde o quadro é processado. Isso tem uma consequência matemática importante que precisa ser discutida no relatório: quando um critério tem o mesmo valor nas três alternativas, ele é matematicamente neutralizado pelo TOPSIS e não influencia o ranking, mesmo que tenha peso AHP elevado. Esse comportamento é estruturalmente diferente do sistema fuzzy especialista, no qual a criticidade atua como uma regra de override que força a decisão independentemente de qualquer comparação entre alternativas.
+
+Entradas e saídas esperadas
+
+Entrada: o arquivo resultado_dataset.csv gerado pelo main.py, que já contém todas as colunas necessárias: total_latency_ms, rtt_jitter_ms, criticality, rtt_ms e decisao_fuzzy.
+
+Saída esperada do AHP: vetor de pesos W = [wCobs, wJnet, wTlat], com CR documentado.
+
+Saída esperada do TOPSIS: coluna decisao_topsis para cada um dos 1.394 quadros, e métricas de comparação: taxa de concordância global com o fuzzy especialista, distribuição das decisões por categoria, e análise específica do subconjunto de alta criticidade.
